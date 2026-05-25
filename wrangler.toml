@@ -9,4 +9,4 @@ not_found_handling = "single-page-application"
 
 [[kv_namespaces]]
 binding = "SCORE_STATE"
-id = "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
+id = "8bea559efd4a47de9926bd221aa4f7b5"
