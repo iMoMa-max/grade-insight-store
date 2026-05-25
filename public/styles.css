@@ -514,14 +514,28 @@ textarea:focus {
 
 @media (max-width: 759px) {
   .topbar {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .topbar > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .class-menu {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .class-menu button {
+    flex: 0 0 auto;
   }
 
   .top-actions {
-    display: grid;
-    grid-template-columns: 40px 36px;
+    display: flex;
+    flex: 0 0 auto;
     justify-content: end;
   }
 
