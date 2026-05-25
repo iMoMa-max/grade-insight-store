@@ -1,8 +1,10 @@
 const text = {
   loading: "\u6b63\u5728\u8bfb\u53d6",
   ready: "\u5df2\u540c\u6b65",
+  localReady: "\u672c\u5730\u5b58\u50a8",
   saving: "\u6b63\u5728\u4fdd\u5b58",
   saved: "\u5df2\u4fdd\u5b58",
+  savedLocal: "\u5df2\u4fdd\u5b58\u5230\u672c\u673a",
   noClass: "\u8bf7\u5148\u521b\u5efa\u73ed\u7ea7",
   noExam: "\u8bf7\u5148\u65b0\u5efa\u8003\u8bd5",
   importDone: "\u6279\u91cf\u5bfc\u5165\u5b8c\u6210",
@@ -23,6 +25,7 @@ const state = {
   apiAvailable: true,
 };
 const localStateKey = "grade-insight-store-state";
+const staticHosts = new Set(["github.io", "pages.dev"]);
 
 const el = {
   statusDot: document.querySelector("#statusDot"),
@@ -68,6 +71,11 @@ function setStatus(message, busy = false) {
   el.statusText.textContent = message;
   el.statusText.title = message;
   el.statusDot.classList.toggle("pulse", busy);
+}
+
+function canUseRemoteApi() {
+  if (location.protocol === "file:") return false;
+  return !Array.from(staticHosts).some((host) => location.hostname === host || location.hostname.endsWith(`.${host}`));
 }
 
 function toggleSettings(forceOpen) {
@@ -139,13 +147,17 @@ function activeNumbers(classInfo) {
 async function loadState() {
   setStatus(text.loading, true);
   let data = {};
-  try {
-    const response = await fetch("/api/state");
-    if (!response.ok) throw new Error("API unavailable");
-    data = await response.json();
-    state.apiAvailable = true;
-  } catch {
-    state.apiAvailable = false;
+  state.apiAvailable = canUseRemoteApi();
+  if (state.apiAvailable) {
+    try {
+      const response = await fetch("/api/state");
+      if (!response.ok) throw new Error("API unavailable");
+      data = await response.json();
+    } catch {
+      state.apiAvailable = false;
+      data = JSON.parse(localStorage.getItem(localStateKey) || "{}");
+    }
+  } else {
     data = JSON.parse(localStorage.getItem(localStateKey) || "{}");
   }
   state.classes = data.classes || [];
@@ -153,7 +165,7 @@ async function loadState() {
   state.selectedClassId = state.classes[0]?.id || "";
   state.selectedExamId = state.exams.find((exam) => exam.classId === state.selectedClassId)?.id || "";
   toggleSettings(state.classes.length === 0 || state.exams.length === 0);
-  setStatus(text.ready);
+  setStatus(state.apiAvailable ? text.ready : text.localReady);
   render();
 }
 
@@ -171,9 +183,11 @@ async function saveState(message = text.saved) {
     } catch {
       state.apiAvailable = false;
       localStorage.setItem(localStateKey, JSON.stringify(payload));
+      message = text.savedLocal;
     }
   } else {
     localStorage.setItem(localStateKey, JSON.stringify(payload));
+    message = text.savedLocal;
   }
   setStatus(message);
   render();
