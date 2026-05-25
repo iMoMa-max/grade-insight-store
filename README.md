@@ -19,17 +19,19 @@ A lightweight class score entry app for mobile-first classroom use.
 
 ## Cloudflare Notes
 
-Before deploying to Cloudflare, create a KV namespace and replace the placeholder in `wrangler.toml`:
+`wrangler.toml` is already configured with the `SCORE_STATE` KV namespace binding used by the Worker API.
 
-```toml
-[[kv_namespaces]]
-binding = "SCORE_STATE"
-id = "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
-```
-
-Then deploy with:
+Deploy with:
 
 ```bash
 npm install
 npm run deploy:cloudflare
 ```
+
+Cloudflare Workers is the recommended deployment target when scores should sync across devices.
+
+## GitHub Pages Notes
+
+The GitHub Pages workflow publishes the static files in `public/`. Because GitHub Pages does not run `/api/state`, the app automatically uses browser local storage there.
+
+The workflow is configured to enable Pages for GitHub Actions during deployment.
