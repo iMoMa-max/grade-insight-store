@@ -1,0 +1,14 @@
+{
+  "name": "grade-insight-store",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "echo static site ready",
+    "deploy:cloudflare": "wrangler deploy"
+  },
+  "dependencies": {
+    "wrangler": "latest"
+  }
+}
