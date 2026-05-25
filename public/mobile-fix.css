@@ -1,0 +1,50 @@
+.topbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+}
+
+.topbar > div:first-child {
+  min-width: 0;
+}
+
+.top-actions {
+  display: flex !important;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.class-menu {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.class-menu button {
+  flex: 0 0 auto;
+}
+
+.exam-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.danger-button {
+  color: #b42318;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 759px) {
+  .topbar {
+    gap: 12px !important;
+  }
+
+  .exam-controls {
+    grid-template-columns: 1fr;
+  }
+}
