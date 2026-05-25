@@ -20,7 +20,9 @@ const state = {
   selectedClassId: "",
   selectedExamId: "",
   selectedNo: null,
+  apiAvailable: true,
 };
+const localStateKey = "grade-insight-store-state";
 
 const el = {
   statusDot: document.querySelector("#statusDot"),
@@ -136,8 +138,16 @@ function activeNumbers(classInfo) {
 
 async function loadState() {
   setStatus(text.loading, true);
-  const response = await fetch("/api/state");
-  const data = response.ok ? await response.json() : {};
+  let data = {};
+  try {
+    const response = await fetch("/api/state");
+    if (!response.ok) throw new Error("API unavailable");
+    data = await response.json();
+    state.apiAvailable = true;
+  } catch {
+    state.apiAvailable = false;
+    data = JSON.parse(localStorage.getItem(localStateKey) || "{}");
+  }
   state.classes = data.classes || [];
   state.exams = data.exams || [];
   state.selectedClassId = state.classes[0]?.id || "";
@@ -149,11 +159,22 @@ async function loadState() {
 
 async function saveState(message = text.saved) {
   setStatus(text.saving, true);
-  await fetch("/api/state", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ classes: state.classes, exams: state.exams }),
-  });
+  const payload = { classes: state.classes, exams: state.exams };
+  if (state.apiAvailable) {
+    try {
+      const response = await fetch("/api/state", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("API unavailable");
+    } catch {
+      state.apiAvailable = false;
+      localStorage.setItem(localStateKey, JSON.stringify(payload));
+    }
+  } else {
+    localStorage.setItem(localStateKey, JSON.stringify(payload));
+  }
   setStatus(message);
   render();
 }
