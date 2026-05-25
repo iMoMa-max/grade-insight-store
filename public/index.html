@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>&#29677;&#32423;&#25104;&#32489;&#24405;&#20837;</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <div class="class-menu" id="titleClassMenu" hidden></div>
+        </div>
+        <div class="top-actions">
+          <button type="button" class="icon-button" id="settingsButton" aria-label="&#35774;&#32622;">
+            <span></span>
+          </button>
+          <div class="status-pill" aria-live="polite"><span id="statusDot"></span><b id="statusText">&#27491;&#22312;&#35835;&#21462;</b></div>
+        </div>
+      </header>
+
+      <section class="settings-panel" id="settingsPanel" hidden>
+        <div class="settings-sheet">
+          <div class="settings-head">
+            <h2>&#35774;&#32622;</h2>
+            <button type="button" class="tool-button compact" id="settingsCloseButton">&#23436;&#25104;</button>
+          </div>
+          <div class="settings-tabs">
+            <button type="button" class="active" data-settings-tab="class">&#29677;&#32423;</button>
+            <button type="button" data-settings-tab="exam">&#32771;&#35797;</button>
+          </div>
+        <form class="panel settings-page" id="classForm" data-settings-page="class">
+          <h2 id="classFormTitle">&#26032;&#24314;&#29677;&#32423;</h2>
+          <label>
+            &#24050;&#26377;&#29677;&#32423;
+            <select id="manageClassSelect"></select>
+          </label>
+          <label>
+            &#29677;&#32423;&#21517;&#31216;
+            <input id="className" required placeholder="&#20363;&#22914;&#65306;&#19968;&#24180;&#32423;1&#29677;" />
+          </label>
+          <label>
+            &#29677;&#32423;&#20154;&#25968;
+            <input id="classSize" required type="number" min="1" max="200" value="40" />
+          </label>
+          <label>
+            &#20241;&#23398;&#23398;&#21495;
+            <input id="inactiveNos" placeholder="&#20363;&#22914;&#65306;3, 18, 27" />
+          </label>
+          <div class="button-row">
+            <button class="primary-button" id="saveClassButton">&#20445;&#23384;&#29677;&#32423;</button>
+            <button type="button" class="tool-button" id="newClassButton">&#26032;&#24314;</button>
+          </div>
+        </form>
+
+        <form class="panel settings-page" id="examForm" data-settings-page="exam" hidden>
+          <h2>&#26032;&#24314;&#32771;&#35797;</h2>
+          <label>
+            &#29677;&#32423;
+            <select id="classSelect"></select>
+          </label>
+          <label>
+            &#32771;&#35797;&#21517;&#31216;
+            <input id="examName" required placeholder="&#20363;&#22914;&#65306;&#26399;&#20013;&#32771;&#35797;" />
+          </label>
+          <div class="two-col">
+            <label>
+              &#26085;&#26399;
+              <input id="examDate" required type="date" />
+            </label>
+            <label>
+              &#24635;&#20998;&#20540;
+              <input id="examTotal" required type="number" min="1" max="1000" value="100" />
+            </label>
+          </div>
+          <button class="primary-button">&#20445;&#23384;&#32771;&#35797;</button>
+        </form>
+        </div>
+      </section>
+
+      <section class="summary-panel">
+        <div class="exam-picker">
+          <select id="examSelect" aria-label="&#24403;&#21069;&#32771;&#35797;"></select>
+        </div>
+        <div class="mini-stats">
+          <div><span>&#24212;&#24405;</span><strong id="activeCount">0</strong></div>
+          <div><span>&#24050;&#24405;</span><strong id="enteredCount">0</strong></div>
+          <div><span>&#24179;&#22343;&#20998;</span><strong id="averageScore">0</strong></div>
+        </div>
+      </section>
+
+      <section class="work-area">
+        <section class="panel student-panel">
+          <div class="panel-heading student-heading">
+            <div class="student-title-row">
+              <button type="button" class="icon-tool-button" id="bulkToggleButton" aria-label="&#28155;&#21152;">+</button>
+            </div>
+          </div>
+          <div class="bulk-panel" id="bulkPanel" hidden>
+            <p class="hint">&#26684;&#24335;&#65306;<b>11.66..13.77</b>&#65292;&#34920;&#31034; 11 &#21495; 66 &#20998;&#65292;13 &#21495; 77 &#20998;&#12290;</p>
+            <textarea id="bulkInput" placeholder="11.66..13.77..25.90"></textarea>
+            <div class="button-row">
+              <button type="button" class="primary-button" id="bulkButton">&#23548;&#20837;</button>
+              <button type="button" class="tool-button" id="clearExamButton">&#28165;&#31354;&#26412;&#27425;&#25104;&#32489;</button>
+            </div>
+          </div>
+          <div class="student-grid" id="studentGrid"></div>
+        </section>
+      </section>
+
+      <div class="score-dialog" id="scoreDialog" hidden>
+        <div class="score-dialog-card">
+          <strong id="editingNo">&#26410;&#36873;&#25321;</strong>
+          <input id="singleScore" type="number" min="0" step="0.5" placeholder="&#20998;&#25968;" />
+          <div class="button-row">
+            <button type="button" class="tool-button" id="cancelScoreButton">&#21462;&#28040;</button>
+            <button type="button" class="primary-button" id="saveScoreButton">&#20445;&#23384;</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
