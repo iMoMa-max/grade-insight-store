@@ -1,0 +1,9 @@
+[build]
+  publish = "public"
+
+[dev]
+  port = 8888
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
