@@ -1,0 +1,12 @@
+name = "grade-insight-store"
+main = "cloudflare/worker.js"
+compatibility_date = "2026-05-25"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[kv_namespaces]]
+binding = "SCORE_STATE"
+id = "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
