@@ -3,6 +3,7 @@ const deleteStaticHosts = new Set(["github.io", "pages.dev"]);
 const deleteExamValue = "__delete_current_exam__";
 let lastExamValue = "";
 let decoratingExamSelect = false;
+let decorateQueued = false;
 
 const deleteEl = {
   manageClassSelect: document.querySelector("#manageClassSelect"),
@@ -50,14 +51,16 @@ function cleanExamLabel(label) {
   return String(label).replace(/\s+-\s+\d{4}-\d{2}-\d{2}$/, "");
 }
 
-function decorateExamSelect() {
+function decorateExamSelectNow() {
   const select = deleteEl.examSelect;
   if (!select || decoratingExamSelect) return;
   decoratingExamSelect = true;
 
   const currentValue = select.value && select.value !== deleteExamValue ? select.value : lastExamValue;
   Array.from(select.options).forEach((option) => {
-    if (option.value !== deleteExamValue) option.textContent = cleanExamLabel(option.textContent);
+    if (option.value === deleteExamValue) return;
+    const clean = cleanExamLabel(option.textContent);
+    if (option.textContent !== clean) option.textContent = clean;
   });
 
   const hasExam = Boolean(currentValue);
@@ -70,11 +73,21 @@ function decorateExamSelect() {
   }
   if (!hasExam && existingDelete) existingDelete.remove();
   if (currentValue && Array.from(select.options).some((option) => option.value === currentValue)) {
-    select.value = currentValue;
+    if (select.value !== currentValue) select.value = currentValue;
     lastExamValue = currentValue;
   }
 
   decoratingExamSelect = false;
+}
+
+function queueDecorateExamSelect() {
+  if (decorateQueued) return;
+  decorateQueued = true;
+  requestAnimationFrame(() => {
+    decorateQueued = false;
+    decorateExamSelectNow();
+    updateDeleteButtonsOnly();
+  });
 }
 
 async function deleteCurrentExam(examId) {
@@ -96,13 +109,17 @@ async function deleteCurrentExam(examId) {
   location.reload();
 }
 
-function updateDeleteButtons() {
+function updateDeleteButtonsOnly() {
   if (deleteEl.deleteClassButton) deleteEl.deleteClassButton.disabled = !deleteEl.manageClassSelect?.value;
   if (deleteEl.deleteExamButton) {
     deleteEl.deleteExamButton.hidden = true;
     deleteEl.deleteExamButton.disabled = true;
   }
-  decorateExamSelect();
+}
+
+function updateDeleteButtons() {
+  updateDeleteButtonsOnly();
+  queueDecorateExamSelect();
 }
 
 deleteEl.deleteClassButton?.addEventListener("click", async () => {
@@ -145,5 +162,7 @@ deleteEl.examSelect?.addEventListener(
 
 deleteEl.manageClassSelect?.addEventListener("change", updateDeleteButtons);
 deleteEl.examSelect?.addEventListener("change", updateDeleteButtons);
-new MutationObserver(updateDeleteButtons).observe(document.body, { childList: true, subtree: true });
+if (deleteEl.examSelect) {
+  new MutationObserver(updateDeleteButtons).observe(deleteEl.examSelect, { childList: true });
+}
 updateDeleteButtons();
