@@ -25,13 +25,55 @@
 
 .exam-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 44px;
   gap: 8px;
   align-items: center;
 }
 
-#deleteExamButton {
-  display: none !important;
+.icon-delete-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f2f7;
+  color: #b42318;
+  padding: 0;
+}
+
+.trash-icon {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 17px;
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
+}
+
+.trash-icon::before {
+  position: absolute;
+  left: -3px;
+  top: -6px;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.trash-icon::after {
+  position: absolute;
+  left: 4px;
+  top: -10px;
+  width: 6px;
+  height: 3px;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+  content: "";
 }
 
 .danger-button {
@@ -49,6 +91,6 @@ button:disabled {
   }
 
   .exam-controls {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 44px;
   }
 }
