@@ -24,30 +24,56 @@
 }
 
 .exam-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  gap: 8px;
-  align-items: center;
+  position: relative;
+  display: block;
+}
+
+.exam-controls select {
+  padding-right: 86px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.exam-controls::after {
+  position: absolute;
+  right: 55px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #1d1d1f;
+  border-bottom: 2px solid #1d1d1f;
+  pointer-events: none;
+  transform: translateY(-70%) rotate(45deg);
+  content: "";
 }
 
 .icon-delete-button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  z-index: 2;
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
   border: 0;
   border-radius: 50%;
-  background: #f2f2f7;
+  background: transparent;
   color: #b42318;
   padding: 0;
+  transform: translateY(-50%);
+}
+
+.icon-delete-button:active {
+  background: #f2f2f7;
 }
 
 .trash-icon {
   position: relative;
   display: block;
-  width: 16px;
-  height: 17px;
+  width: 15px;
+  height: 16px;
   border: 2px solid currentColor;
   border-top: 0;
   border-radius: 0 0 4px 4px;
@@ -57,7 +83,7 @@
   position: absolute;
   left: -3px;
   top: -6px;
-  width: 18px;
+  width: 17px;
   height: 2px;
   border-radius: 999px;
   background: currentColor;
@@ -68,7 +94,7 @@
   position: absolute;
   left: 4px;
   top: -10px;
-  width: 6px;
+  width: 5px;
   height: 3px;
   border: 2px solid currentColor;
   border-bottom: 0;
@@ -88,9 +114,5 @@ button:disabled {
 @media (max-width: 759px) {
   .topbar {
     gap: 12px !important;
-  }
-
-  .exam-controls {
-    grid-template-columns: minmax(0, 1fr) 44px;
   }
 }
