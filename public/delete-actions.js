@@ -1,5 +1,8 @@
 const deleteStateKey = "grade-insight-store-state";
 const deleteStaticHosts = new Set(["github.io", "pages.dev"]);
+const deleteExamValue = "__delete_current_exam__";
+let lastExamValue = "";
+let decoratingExamSelect = false;
 
 const deleteEl = {
   manageClassSelect: document.querySelector("#manageClassSelect"),
@@ -7,6 +10,8 @@ const deleteEl = {
   examSelect: document.querySelector("#examSelect"),
   deleteExamButton: document.querySelector("#deleteExamButton"),
 };
+
+if (deleteEl.deleteExamButton) deleteEl.deleteExamButton.hidden = true;
 
 function canUseDeleteRemoteApi() {
   if (location.protocol === "file:") return false;
@@ -41,9 +46,63 @@ async function writeStoredState(payload) {
   localStorage.setItem(deleteStateKey, JSON.stringify(payload));
 }
 
+function cleanExamLabel(label) {
+  return String(label).replace(/\s+-\s+\d{4}-\d{2}-\d{2}$/, "");
+}
+
+function decorateExamSelect() {
+  const select = deleteEl.examSelect;
+  if (!select || decoratingExamSelect) return;
+  decoratingExamSelect = true;
+
+  const currentValue = select.value && select.value !== deleteExamValue ? select.value : lastExamValue;
+  Array.from(select.options).forEach((option) => {
+    if (option.value !== deleteExamValue) option.textContent = cleanExamLabel(option.textContent);
+  });
+
+  const hasExam = Boolean(currentValue);
+  const existingDelete = Array.from(select.options).find((option) => option.value === deleteExamValue);
+  if (hasExam && !existingDelete) {
+    const option = document.createElement("option");
+    option.value = deleteExamValue;
+    option.textContent = "\u5220\u9664\u5f53\u524d\u8003\u8bd5";
+    select.append(option);
+  }
+  if (!hasExam && existingDelete) existingDelete.remove();
+  if (currentValue && Array.from(select.options).some((option) => option.value === currentValue)) {
+    select.value = currentValue;
+    lastExamValue = currentValue;
+  }
+
+  decoratingExamSelect = false;
+}
+
+async function deleteCurrentExam(examId) {
+  if (!examId) return;
+  const data = await readStoredState();
+  const classes = Array.isArray(data.classes) ? data.classes : [];
+  const exams = Array.isArray(data.exams) ? data.exams : [];
+  const exam = exams.find((item) => item.id === examId);
+  if (!exam) return;
+
+  if (!confirm(`\u5220\u9664\u201c${exam.name}\u201d\u53ca\u5176\u6240\u6709\u6210\u7ee9\uff1f`)) {
+    deleteEl.examSelect.value = examId;
+    return;
+  }
+  await writeStoredState({
+    classes,
+    exams: exams.filter((item) => item.id !== examId),
+  });
+  location.reload();
+}
+
 function updateDeleteButtons() {
   if (deleteEl.deleteClassButton) deleteEl.deleteClassButton.disabled = !deleteEl.manageClassSelect?.value;
-  if (deleteEl.deleteExamButton) deleteEl.deleteExamButton.disabled = !deleteEl.examSelect?.value;
+  if (deleteEl.deleteExamButton) {
+    deleteEl.deleteExamButton.hidden = true;
+    deleteEl.deleteExamButton.disabled = true;
+  }
+  decorateExamSelect();
 }
 
 deleteEl.deleteClassButton?.addEventListener("click", async () => {
@@ -56,7 +115,7 @@ deleteEl.deleteClassButton?.addEventListener("click", async () => {
   const classInfo = classes.find((item) => item.id === classId);
   if (!classInfo) return;
 
-  if (!confirm(`删除“${classInfo.name}”及其所有考试和成绩？`)) return;
+  if (!confirm(`\u5220\u9664\u201c${classInfo.name}\u201d\u53ca\u5176\u6240\u6709\u8003\u8bd5\u548c\u6210\u7ee9\uff1f`)) return;
   await writeStoredState({
     classes: classes.filter((item) => item.id !== classId),
     exams: exams.filter((exam) => exam.classId !== classId),
@@ -65,22 +124,24 @@ deleteEl.deleteClassButton?.addEventListener("click", async () => {
 });
 
 deleteEl.deleteExamButton?.addEventListener("click", async () => {
-  const examId = deleteEl.examSelect?.value;
-  if (!examId) return;
-
-  const data = await readStoredState();
-  const classes = Array.isArray(data.classes) ? data.classes : [];
-  const exams = Array.isArray(data.exams) ? data.exams : [];
-  const exam = exams.find((item) => item.id === examId);
-  if (!exam) return;
-
-  if (!confirm(`删除“${exam.name}”及其所有成绩？`)) return;
-  await writeStoredState({
-    classes,
-    exams: exams.filter((item) => item.id !== examId),
-  });
-  location.reload();
+  await deleteCurrentExam(deleteEl.examSelect?.value);
 });
+
+deleteEl.examSelect?.addEventListener(
+  "change",
+  async (event) => {
+    if (deleteEl.examSelect.value !== deleteExamValue) {
+      lastExamValue = deleteEl.examSelect.value;
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const examId = lastExamValue;
+    deleteEl.examSelect.value = examId;
+    await deleteCurrentExam(examId);
+  },
+  true
+);
 
 deleteEl.manageClassSelect?.addEventListener("change", updateDeleteButtons);
 deleteEl.examSelect?.addEventListener("change", updateDeleteButtons);
