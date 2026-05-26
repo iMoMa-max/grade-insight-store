@@ -1,6 +1,5 @@
 const deleteStateKey = "grade-insight-store-state";
 const deleteStaticHosts = new Set(["github.io", "pages.dev"]);
-const deleteExamValue = "__delete_current_exam__";
 let lastExamValue = "";
 let decoratingExamSelect = false;
 let decorateQueued = false;
@@ -11,8 +10,6 @@ const deleteEl = {
   examSelect: document.querySelector("#examSelect"),
   deleteExamButton: document.querySelector("#deleteExamButton"),
 };
-
-if (deleteEl.deleteExamButton) deleteEl.deleteExamButton.hidden = true;
 
 function canUseDeleteRemoteApi() {
   if (location.protocol === "file:") return false;
@@ -56,22 +53,12 @@ function decorateExamSelectNow() {
   if (!select || decoratingExamSelect) return;
   decoratingExamSelect = true;
 
-  const currentValue = select.value && select.value !== deleteExamValue ? select.value : lastExamValue;
+  const currentValue = select.value || lastExamValue;
   Array.from(select.options).forEach((option) => {
-    if (option.value === deleteExamValue) return;
     const clean = cleanExamLabel(option.textContent);
     if (option.textContent !== clean) option.textContent = clean;
   });
 
-  const hasExam = Boolean(currentValue);
-  const existingDelete = Array.from(select.options).find((option) => option.value === deleteExamValue);
-  if (hasExam && !existingDelete) {
-    const option = document.createElement("option");
-    option.value = deleteExamValue;
-    option.textContent = "\u5220\u9664\u5f53\u524d\u8003\u8bd5";
-    select.append(option);
-  }
-  if (!hasExam && existingDelete) existingDelete.remove();
   if (currentValue && Array.from(select.options).some((option) => option.value === currentValue)) {
     if (select.value !== currentValue) select.value = currentValue;
     lastExamValue = currentValue;
@@ -98,10 +85,7 @@ async function deleteCurrentExam(examId) {
   const exam = exams.find((item) => item.id === examId);
   if (!exam) return;
 
-  if (!confirm(`\u5220\u9664\u201c${exam.name}\u201d\u53ca\u5176\u6240\u6709\u6210\u7ee9\uff1f`)) {
-    deleteEl.examSelect.value = examId;
-    return;
-  }
+  if (!confirm(`\u5220\u9664\u201c${exam.name}\u201d\u53ca\u5176\u6240\u6709\u6210\u7ee9\uff1f`)) return;
   await writeStoredState({
     classes,
     exams: exams.filter((item) => item.id !== examId),
@@ -111,10 +95,7 @@ async function deleteCurrentExam(examId) {
 
 function updateDeleteButtonsOnly() {
   if (deleteEl.deleteClassButton) deleteEl.deleteClassButton.disabled = !deleteEl.manageClassSelect?.value;
-  if (deleteEl.deleteExamButton) {
-    deleteEl.deleteExamButton.hidden = true;
-    deleteEl.deleteExamButton.disabled = true;
-  }
+  if (deleteEl.deleteExamButton) deleteEl.deleteExamButton.disabled = !deleteEl.examSelect?.value;
 }
 
 function updateDeleteButtons() {
@@ -144,21 +125,9 @@ deleteEl.deleteExamButton?.addEventListener("click", async () => {
   await deleteCurrentExam(deleteEl.examSelect?.value);
 });
 
-deleteEl.examSelect?.addEventListener(
-  "change",
-  async (event) => {
-    if (deleteEl.examSelect.value !== deleteExamValue) {
-      lastExamValue = deleteEl.examSelect.value;
-      return;
-    }
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const examId = lastExamValue;
-    deleteEl.examSelect.value = examId;
-    await deleteCurrentExam(examId);
-  },
-  true
-);
+deleteEl.examSelect?.addEventListener("change", () => {
+  lastExamValue = deleteEl.examSelect.value;
+});
 
 deleteEl.manageClassSelect?.addEventListener("change", updateDeleteButtons);
 deleteEl.examSelect?.addEventListener("change", updateDeleteButtons);
