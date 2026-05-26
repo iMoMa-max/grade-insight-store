@@ -1,8 +1,9 @@
 const deleteStateKey = "grade-insight-store-state";
 const deleteStaticHosts = new Set(["github.io", "pages.dev"]);
 let lastExamValue = "";
-let decoratingExamSelect = false;
-let decorateQueued = false;
+let customExam = null;
+let customOpen = false;
+let rebuildQueued = false;
 
 const deleteEl = {
   manageClassSelect: document.querySelector("#manageClassSelect"),
@@ -10,6 +11,16 @@ const deleteEl = {
   examSelect: document.querySelector("#examSelect"),
   deleteExamButton: document.querySelector("#deleteExamButton"),
 };
+
+const trashIcon = `
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 7h16"></path>
+    <path d="M9 7V5h6v2"></path>
+    <path d="M7 7l1 13h8l1-13"></path>
+    <path d="M10 11v5"></path>
+    <path d="M14 11v5"></path>
+  </svg>
+`;
 
 function canUseDeleteRemoteApi() {
   if (location.protocol === "file:") return false;
@@ -48,33 +59,22 @@ function cleanExamLabel(label) {
   return String(label).replace(/\s+-\s+\d{4}-\d{2}-\d{2}$/, "");
 }
 
-function decorateExamSelectNow() {
-  const select = deleteEl.examSelect;
-  if (!select || decoratingExamSelect) return;
-  decoratingExamSelect = true;
-
-  const currentValue = select.value || lastExamValue;
-  Array.from(select.options).forEach((option) => {
-    const clean = cleanExamLabel(option.textContent);
-    if (option.textContent !== clean) option.textContent = clean;
-  });
-
-  if (currentValue && Array.from(select.options).some((option) => option.value === currentValue)) {
-    if (select.value !== currentValue) select.value = currentValue;
-    lastExamValue = currentValue;
-  }
-
-  decoratingExamSelect = false;
+function setCustomOpen(open) {
+  customOpen = open;
+  if (!customExam) return;
+  customExam.root.classList.toggle("open", open);
+  customExam.button.setAttribute("aria-expanded", String(open));
+  customExam.list.hidden = !open;
 }
 
-function queueDecorateExamSelect() {
-  if (decorateQueued) return;
-  decorateQueued = true;
-  requestAnimationFrame(() => {
-    decorateQueued = false;
-    decorateExamSelectNow();
-    updateDeleteButtonsOnly();
-  });
+function selectExam(value) {
+  const select = deleteEl.examSelect;
+  if (!select) return;
+  select.value = value;
+  lastExamValue = value;
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+  setCustomOpen(false);
+  queueRebuildCustomExam();
 }
 
 async function deleteCurrentExam(examId) {
@@ -85,7 +85,7 @@ async function deleteCurrentExam(examId) {
   const exam = exams.find((item) => item.id === examId);
   if (!exam) return;
 
-  if (!confirm(`\u5220\u9664\u201c${exam.name}\u201d\u53ca\u5176\u6240\u6709\u6210\u7ee9\uff1f`)) return;
+  if (!confirm(`删除“${exam.name}”及其所有成绩？`)) return;
   await writeStoredState({
     classes,
     exams: exams.filter((item) => item.id !== examId),
@@ -93,14 +93,107 @@ async function deleteCurrentExam(examId) {
   location.reload();
 }
 
+function ensureCustomExamSelect() {
+  const select = deleteEl.examSelect;
+  if (!select || customExam) return;
+
+  select.classList.add("native-exam-select");
+  if (deleteEl.deleteExamButton) {
+    deleteEl.deleteExamButton.hidden = true;
+    deleteEl.deleteExamButton.disabled = true;
+  }
+
+  const root = document.createElement("div");
+  root.className = "exam-combo";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "exam-combo-button";
+  button.setAttribute("aria-haspopup", "listbox");
+  button.setAttribute("aria-expanded", "false");
+
+  const list = document.createElement("div");
+  list.className = "exam-combo-list";
+  list.setAttribute("role", "listbox");
+  list.hidden = true;
+
+  root.append(button, list);
+  select.insertAdjacentElement("afterend", root);
+  customExam = { root, button, list };
+
+  button.addEventListener("click", () => setCustomOpen(!customOpen));
+  document.addEventListener("click", (event) => {
+    if (!root.contains(event.target)) setCustomOpen(false);
+  });
+}
+
+function rebuildCustomExamNow() {
+  ensureCustomExamSelect();
+  const select = deleteEl.examSelect;
+  if (!select || !customExam) return;
+
+  const options = Array.from(select.options).filter((option) => option.value);
+  const currentValue = select.value || lastExamValue;
+  const selected = options.find((option) => option.value === currentValue) || options[0];
+
+  if (selected && select.value !== selected.value) {
+    select.value = selected.value;
+  }
+
+  lastExamValue = selected?.value || "";
+  customExam.root.hidden = options.length === 0;
+  customExam.button.textContent = selected ? cleanExamLabel(selected.textContent) : "请先新建考试";
+  customExam.list.innerHTML = "";
+
+  options.forEach((option) => {
+    const row = document.createElement("div");
+    row.className = "exam-option-row";
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", String(option.value === select.value));
+
+    const nameButton = document.createElement("button");
+    nameButton.type = "button";
+    nameButton.className = "exam-option-name";
+    nameButton.textContent = cleanExamLabel(option.textContent);
+    nameButton.addEventListener("click", () => selectExam(option.value));
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "exam-delete-inline";
+    deleteButton.setAttribute("aria-label", `删除${cleanExamLabel(option.textContent)}`);
+    deleteButton.innerHTML = trashIcon;
+    deleteButton.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await deleteCurrentExam(option.value);
+    });
+
+    row.append(nameButton, deleteButton);
+    customExam.list.append(row);
+  });
+
+  updateDeleteButtonsOnly();
+}
+
+function queueRebuildCustomExam() {
+  if (rebuildQueued) return;
+  rebuildQueued = true;
+  requestAnimationFrame(() => {
+    rebuildQueued = false;
+    rebuildCustomExamNow();
+  });
+}
+
 function updateDeleteButtonsOnly() {
   if (deleteEl.deleteClassButton) deleteEl.deleteClassButton.disabled = !deleteEl.manageClassSelect?.value;
-  if (deleteEl.deleteExamButton) deleteEl.deleteExamButton.disabled = !deleteEl.examSelect?.value;
+  if (deleteEl.deleteExamButton) {
+    deleteEl.deleteExamButton.hidden = true;
+    deleteEl.deleteExamButton.disabled = true;
+  }
 }
 
 function updateDeleteButtons() {
   updateDeleteButtonsOnly();
-  queueDecorateExamSelect();
+  queueRebuildCustomExam();
 }
 
 deleteEl.deleteClassButton?.addEventListener("click", async () => {
@@ -113,7 +206,7 @@ deleteEl.deleteClassButton?.addEventListener("click", async () => {
   const classInfo = classes.find((item) => item.id === classId);
   if (!classInfo) return;
 
-  if (!confirm(`\u5220\u9664\u201c${classInfo.name}\u201d\u53ca\u5176\u6240\u6709\u8003\u8bd5\u548c\u6210\u7ee9\uff1f`)) return;
+  if (!confirm(`删除“${classInfo.name}”及其所有考试和成绩？`)) return;
   await writeStoredState({
     classes: classes.filter((item) => item.id !== classId),
     exams: exams.filter((exam) => exam.classId !== classId),
@@ -125,13 +218,14 @@ deleteEl.deleteExamButton?.addEventListener("click", async () => {
   await deleteCurrentExam(deleteEl.examSelect?.value);
 });
 
+deleteEl.manageClassSelect?.addEventListener("change", updateDeleteButtons);
 deleteEl.examSelect?.addEventListener("change", () => {
   lastExamValue = deleteEl.examSelect.value;
+  updateDeleteButtons();
 });
 
-deleteEl.manageClassSelect?.addEventListener("change", updateDeleteButtons);
-deleteEl.examSelect?.addEventListener("change", updateDeleteButtons);
 if (deleteEl.examSelect) {
   new MutationObserver(updateDeleteButtons).observe(deleteEl.examSelect, { childList: true });
 }
+
 updateDeleteButtons();
